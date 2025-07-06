@@ -3,66 +3,121 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
-import { UserProvider } from "./contexts/UserContext";
-import Index from "./pages/Index";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
-import Interview from "./pages/Interview";
-import Quiz from "./pages/Quiz";
-import AIQnA from "./pages/AIQnA";
-import Profile from "./pages/Profile";
-import NotFound from "./pages/NotFound";
-import ProtectedRoute from "./components/ProtectedRoute";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import AuthPage from "../frontend/src/pages/AuthPage";
+import Overview from "../frontend/src/pages/Overview";
+import Profile from "../frontend/src/pages/Profile";
+import InterviewQA from "../frontend/src/pages/InterviewQA";
+import InterviewQuiz from "../frontend/src/pages/InterviewQuiz";
+import Quiz from "../frontend/src/pages/Quiz";
+import Results from "../frontend/src/pages/Results";
+import Room from "../frontend/src/pages/Room";
+import VideoCall from "../frontend/src/pages/VideoCall";
+import Page404 from "../frontend/src/pages/Page404";
+import CallNavbar from "../frontend/src/components/CallNavbar";
+import { useStore } from "../frontend/src/store/store";
+import { useEffect, useState } from "react";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import "../frontend/src/App.scss";
+import 'react-tooltip/dist/react-tooltip.css';
 
 const queryClient = new QueryClient();
+const API_URL = import.meta.env.VITE_API_URL;
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <AuthProvider>
-        <UserProvider>
+const App = () => {
+  const { user, checkingAuth, getAuth } = useStore();
+  const [serverStatus, setServerStatus] = useState('connecting');
+
+  useEffect(() => {
+    const checkServerStatus = async () => {
+      try {
+        const response = await fetch(API_URL);
+        if (response.ok) {
+          setServerStatus('connected');
+          clearInterval(intervalId);
+        } else {
+          setServerStatus('error');
+        }
+      } catch (error) {
+        setServerStatus('error');
+      }
+    };
+
+    const intervalId = setInterval(checkServerStatus, 5000);
+    checkServerStatus();
+
+    return () => clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
+    getAuth();
+  }, [getAuth]);
+
+  if (checkingAuth) {
+    return (
+      <div className="flex justify-center items-center bg-black h-screen">
+        <span className='loader-qs invert absolute'></span>
+      </div>
+    );
+  }
+
+  const Loader = () => {
+    return (
+      <div className="flex justify-center relative items-center bg-black h-screen">
+        <p className='text-white text-2xl font-semibold absolute top-3/4'>Server not responding, please hold on or try again after sometime...</p>
+        <span className='loader-eye absolute'></span>
+      </div>
+    );
+  };
+
+  if (serverStatus === 'error') {
+    return <Loader />;
+  }
+
+  if (serverStatus === 'connected') {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <ToastContainer 
+            position="top-right"
+            autoClose={1000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="dark"
+          />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
+              <Route path="/" element={user ? <Overview /> : <Navigate to="/login" />} />
+              <Route path="/login" element={!user ? <AuthPage /> : <Navigate to="/" />} />
+              <Route path="/qa" element={user ? <InterviewQA /> : <Navigate to="/login" />} />
+              <Route path="/quiz" element={user ? <InterviewQuiz /> : <Navigate to="/login" />} />
+              <Route path="/quiz/:id" element={user ? <Quiz /> : <Navigate to="/login" />} />
+              <Route path="/results/:id" element={user ? <Results /> : <Navigate to="/login" />} />
+              <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
+              <Route path="/createroom" element={<Room />} />
+              <Route path="/createroom/:id" element={
+                <>
+                  <CallNavbar />
+                  <VideoCall />
+                </>
               } />
-              <Route path="/interview" element={
-                <ProtectedRoute>
-                  <Interview />
-                </ProtectedRoute>
-              } />
-              <Route path="/quiz" element={
-                <ProtectedRoute>
-                  <Quiz />
-                </ProtectedRoute>
-              } />
-              <Route path="/ai-qna" element={
-                <ProtectedRoute>
-                  <AIQnA />
-                </ProtectedRoute>
-              } />
-              <Route path="/profile" element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              } />
-              <Route path="*" element={<NotFound />} />
+              <Route path="*" element={<Page404 />} />
             </Routes>
           </BrowserRouter>
-        </UserProvider>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+  }
+
+  return null;
+};
 
 export default App;
