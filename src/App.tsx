@@ -15,6 +15,7 @@ import Room from "../frontend/src/pages/Room";
 import VideoCall from "../frontend/src/pages/VideoCall";
 import Page404 from "../frontend/src/pages/Page404";
 import CallNavbar from "../frontend/src/components/CallNavbar";
+import Login from "./pages/Login";
 import { useStore } from "../frontend/src/store/store";
 import { useEffect, useState } from "react";
 import { ToastContainer } from 'react-toastify';
@@ -51,8 +52,14 @@ const App = () => {
   }, []);
 
   useEffect(() => {
+    console.log('App: Getting auth status');
     getAuth();
   }, [getAuth]);
+
+  useEffect(() => {
+    console.log('App: User state changed:', user ? 'logged in' : 'not logged in');
+    console.log('App: Checking auth:', checkingAuth);
+  }, [user, checkingAuth]);
 
   if (checkingAuth) {
     return (
@@ -95,13 +102,14 @@ const App = () => {
           />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={user ? <Overview /> : <Navigate to="/login" />} />
-              <Route path="/login" element={!user ? <AuthPage /> : <Navigate to="/" />} />
-              <Route path="/qa" element={user ? <InterviewQA /> : <Navigate to="/login" />} />
-              <Route path="/quiz" element={user ? <InterviewQuiz /> : <Navigate to="/login" />} />
-              <Route path="/quiz/:id" element={user ? <Quiz /> : <Navigate to="/login" />} />
-              <Route path="/results/:id" element={user ? <Results /> : <Navigate to="/login" />} />
-              <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
+              <Route path="/" element={user ? <Overview /> : <Navigate to="/login" replace />} />
+              <Route path="/login" element={!user ? <Login /> : <Navigate to="/" replace />} />
+              <Route path="/auth" element={!user ? <AuthPage /> : <Navigate to="/" replace />} />
+              <Route path="/qa" element={user ? <InterviewQA /> : <Navigate to="/login" replace />} />
+              <Route path="/quiz" element={user ? <InterviewQuiz /> : <Navigate to="/login" replace />} />
+              <Route path="/quiz/:id" element={user ? <Quiz /> : <Navigate to="/login" replace />} />
+              <Route path="/results/:id" element={user ? <Results /> : <Navigate to="/login" replace />} />
+              <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" replace />} />
               <Route path="/createroom" element={<Room />} />
               <Route path="/createroom/:id" element={
                 <>

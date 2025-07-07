@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,22 +12,39 @@ import Navbar from '../components/Navbar';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login, isLoggingIn } = useStore();
+  const { login, isLoggingIn, user } = useStore();
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      console.log('User already logged in, redirecting to home');
+      navigate('/', { replace: true });
+    }
+  }, [user, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Login form submitted with:', { email });
 
     try {
-      const user = await login({ email, password });
-      if (user) {
+      const loggedInUser = await login({ email, password });
+      console.log('Login result:', loggedInUser);
+      
+      if (loggedInUser) {
         toast({
           title: "Welcome back!",
           description: "You've been logged in successfully.",
         });
-        navigate('/');
+        
+        // Force navigation to home page
+        console.log('Navigating to home page');
+        setTimeout(() => {
+          navigate('/', { replace: true });
+        }, 100);
       } else {
+        console.log('Login failed - no user returned');
         toast({
           title: "Login failed",
           description: "Please check your credentials and try again.",
@@ -35,6 +52,7 @@ const Login = () => {
         });
       }
     } catch (error) {
+      console.error('Login error:', error);
       toast({
         title: "Login failed",
         description: "Please check your credentials and try again.",
