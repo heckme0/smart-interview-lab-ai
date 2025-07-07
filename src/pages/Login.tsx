@@ -5,30 +5,34 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuth } from '../contexts/AuthContext';
+import { useStore } from '../../frontend/src/store/store';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '../components/Navbar';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, isLoggingIn } = useStore();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
 
     try {
-      const success = await login(email, password);
-      if (success) {
+      const user = await login({ email, password });
+      if (user) {
         toast({
           title: "Welcome back!",
           description: "You've been logged in successfully.",
         });
-        navigate('/dashboard');
+        navigate('/');
+      } else {
+        toast({
+          title: "Login failed",
+          description: "Please check your credentials and try again.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       toast({
@@ -36,8 +40,6 @@ const Login = () => {
         description: "Please check your credentials and try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -82,9 +84,9 @@ const Login = () => {
               <Button 
                 type="submit" 
                 className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                disabled={isLoading}
+                disabled={isLoggingIn}
               >
-                {isLoading ? 'Signing in...' : 'Sign In'}
+                {isLoggingIn ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
             
